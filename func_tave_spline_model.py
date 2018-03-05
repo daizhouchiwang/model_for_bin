@@ -188,14 +188,18 @@ def get_prediction_result(start_year, end_year, prediction_month, ens_number):
     return dp_final
 
 if __name__ == "__main__":
-# train the model, save the model to local file (optional)
-#    train_model()
-
-    ens_number=1
+# first use train_model() to train the model and save the model to local file
+#    
+ 
+# Below save prediction results for multiple years and ensembles
+#    ens_number=1
+#    prediction_month = 5
     start_year = 1982
     end_year = 1990
-    prediction_month = 5
-    get_prediction_result(start_year, end_year, prediction_month, ens_number)
+
+    for m in range(1,10):
+        for e in range(1,25):
+            get_prediction_result(start_year, end_year, m, e)
 
 
 
