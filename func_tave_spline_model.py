@@ -7,9 +7,9 @@ import statsmodels.api as sm
 Define model struture
 """
 def define_model_structure():
-    var_base = {'T_spline_6_8': ("+ bs(tave6, df=3, knots = (20,23), degree=1,lower_bound=7,upper_bound=35)"
-                            + "+ bs(tave7, df=3, knots = (22,26), degree=1,lower_bound=10,upper_bound=40)" 
-                            + "+ bs(tave8, df=3, knots = (20,24), degree=1,lower_bound=11,upper_bound=40)"), 
+    var_base = {'T_spline_6_8': ("+ bs(tave6, df=3, knots = (20,23), degree=1,lower_bound=7,upper_bound=29)"
+                            + "+ bs(tave7, df=3, knots = (22,26), degree=1,lower_bound=10,upper_bound=32)" 
+                            + "+ bs(tave8, df=3, knots = (20,24), degree=1,lower_bound=11,upper_bound=31)"), 
                                 
             'P_spline_6_9': (" + bs(precip6, df=3, knots = (75,200), degree=1,lower_bound=0,upper_bound=700)"
                             + " + bs(precip7, df=3, knots = (75,200), degree=1,lower_bound=0,upper_bound=700)"
