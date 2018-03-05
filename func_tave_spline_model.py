@@ -84,8 +84,9 @@ def train_model():
     trend_rainfed.save("yield_trend_rainfed_model.pickle")
     
 
+
 """
-Make yield 
+Basic function to predict yield 
 df_predict = make_prediction(df)
 """
 def make_prediction(df):
@@ -95,9 +96,95 @@ def make_prediction(df):
     # Get predicted yield and attach it to existing dataframe
     df_predict = df.copy().join(trained_model.predict(df).to_frame('predicted_yield_rainfed_ana'))
     # Add trend term to get yield
-    df_predict['predicted_rainfed_yield'] = df_predict['predicted_yield_rainfed_ana'] + trend_results.predict(df_predict['year'])
+    df_predict['predicted_yield_rainfed'] = df_predict['predicted_yield_rainfed_ana'] + trend_results.predict(df_predict['year'])
     return df_predict
 
+
+"""
+Load observed climate data
+"""
+def load_obs_climate():
+    obs_climate = pd.read_csv('./prism_climate_growing_season_1981_2016.csv',dtype={'FIPS':str})
+    return obs_climate.set_index(['year','FIPS'])
+
+
+
+"""
+Load forecast data
+df = load_forecast_data(year, month, ens)
+E.g., d = load_forecast_data(1982, 1, 1)
+"""
+def load_forecast_data(year, month, ens):
+    d = pd.read_csv('./NCEP_CFS_forcing/NCEP_CFS_%d%02d_ens%02d.csv'%(year,month,ens),dtype={'FIPS':str})
+    # convert to monthly total amount
+    d.loc[:,'precip5'] = d.loc[:,'precip5'] * 31
+    d.loc[:,'precip6'] = d.loc[:,'precip6'] * 30
+    d.loc[:,'precip7'] = d.loc[:,'precip7'] * 31
+    d.loc[:,'precip8'] = d.loc[:,'precip8'] * 31
+    d.loc[:,'precip9'] = d.loc[:,'precip9'] * 30
+
+    d.rename(columns={'tavg5':'tave5','tavg6':'tave6','tavg7':'tave7','tavg8':'tave8','tavg9':'tave9'},inplace=True)
+    
+    # Convert to Degree C
+    d.loc[:,'tave5':'tave9'] = d.loc[:,'tave5':'tave9'] - 273.15 
+
+    # Add year column
+    d['year'] = year
+    
+    return d
+
+
+"""
+Merge forecast with observed climate at the time of a month for prediction
+Prediction will be made at 1st of that month
+e.g., month = 7, means prediction and 1st July, thus replace June and May with observed climate
+
+d = merge_forecast_with_obs(d_forecast, d_obs, month)
+"""
+# It works for both a single year or multiple years
+def merge_forecast_with_obs(d_forecast, d_obs, month):
+    
+    d_forecast.set_index(['year','FIPS'],inplace=True)
+    
+    # month number that needs to be filled with obs, starting from June
+    n = month - 6 + 1
+    
+    # if month >=7, replace month - 1 with obs
+    if n > 0:
+        for i in range(1,n+1):
+            d_forecast.loc[:,'precip' + str(month-i)] = d_obs.loc[:,'precip' + str(month-i)]
+            d_forecast.loc[:,'tave' + str(month-i)] = d_obs.loc[:,'tave' + str(month-i)]
+            
+    return d_forecast.reset_index()  
+
+
+"""
+Predict yield for multiple years at once and return the results
+e.g., d_final = get_prediction_result(1982, 1990, 1, 1)
+"""
+def get_prediction_result(start_year, end_year, prediction_month, ens_number):
+    # Load forecast data for multiple years
+    d_forecast = pd.concat([load_forecast_data(y, prediction_month, ens_number) for y in range(start_year,end_year)])
+    
+    # Merge forecast with obs climate depending on the prediction month
+    if prediction_month>=6:
+        obs_climate = load_obs_climate()
+        d_forecast = merge_forecast_with_obs(d_forecast, obs_climate, prediction_month)
+    
+    # Load obs yield data
+    obs_yield = load_yield_data()
+    
+    # Only predict counties that included in the 12 states obs data 
+    con = d_forecast['FIPS'].isin(obs_yield['FIPS'].unique())
+    dp = make_prediction(d_forecast[con].reset_index())
+    
+    # Combine with obs yield data
+    dp_final = dp.loc[:,['year','FIPS','predicted_yield_rainfed']].merge(df_obs[['year','FIPS','yield_rainfed']])
+    
+    return dp_final
+
+if __name__ == "__main__":
+    train_model()
 
 # Step 1: train the model, save the model to local file (optional)
 # train_model()
@@ -107,4 +194,6 @@ def make_prediction(df):
 # Example:
 # d = load_yield_data()
 # df_predict = make_prediction(d)
+
+
 
