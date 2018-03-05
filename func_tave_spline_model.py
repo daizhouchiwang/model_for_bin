@@ -179,21 +179,23 @@ def get_prediction_result(start_year, end_year, prediction_month, ens_number):
     dp = make_prediction(d_forecast[con].reset_index())
     
     # Combine with obs yield data
-    dp_final = dp.loc[:,['year','FIPS','predicted_yield_rainfed']].merge(df_obs[['year','FIPS','yield_rainfed']])
-    
+    dp_final = dp.loc[:,['year','FIPS','predicted_yield_rainfed']].merge(obs_yield[['year','FIPS','yield_rainfed']])
+
+    dp_final.to_csv('./result/yield_forcast_%d_%d_at_month_%02d_ens%02d.csv'%(start_year,end_year,
+                                                                          prediction_month, ens_number))
+    print('Yield prediction for %d_%d_at_month_%02d_ens%02d saved to file'%(start_year,end_year,
+                                                                          prediction_month, ens_number))
     return dp_final
 
 if __name__ == "__main__":
-    train_model()
+# train the model, save the model to local file (optional)
+#    train_model()
 
-# Step 1: train the model, save the model to local file (optional)
-# train_model()
-
-# Step 2: make prediction: need data frame "d" with columns: 'year','FIPS','tave6':'tave8', and 'precip6':'precip9'
-
-# Example:
-# d = load_yield_data()
-# df_predict = make_prediction(d)
+    ens_number=1
+    start_year = 1982
+    end_year = 1990
+    prediction_month = 5
+    get_prediction_result(start_year, end_year, prediction_month, ens_number)
 
 
 
